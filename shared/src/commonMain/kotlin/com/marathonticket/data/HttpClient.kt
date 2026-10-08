@@ -5,14 +5,14 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.encoding.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
 class MarathonHttpClient private constructor() {
-    private var token: String? = null
+    @PublishedApi
+    internal var authToken: String? = null
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -24,10 +24,6 @@ class MarathonHttpClient private constructor() {
     val client = HttpClient {
         install(ContentNegotiation) {
             json(this@MarathonHttpClient.json)
-        }
-        install(ContentEncoding) {
-            gzip()
-            deflate()
         }
         defaultRequest {
             url("https://api.marathon.example.com/v1/")
@@ -47,14 +43,14 @@ class MarathonHttpClient private constructor() {
 
     suspend inline fun <reified T> get(path: String, params: Map<String, String> = emptyMap()): T {
         return client.get(path) {
-            token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
             params.forEach { (k, v) -> parameter(k, v) }
         }.body()
     }
 
     suspend inline fun <reified T> post(path: String, body: Any? = null): T {
         return client.post(path) {
-            token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
             if (body != null) setBody(body)
         }.body()
     }
